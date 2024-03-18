@@ -19,6 +19,10 @@ namespace ChessExperiment
                 new Rook("Black", 0,7),  new Knight("Black", 1,7), new Bishop("Black", 2,7), new King("Black", 3,7),  new Queen("Black", 4,7), new Bishop("Black", 5,7), new Knight("Black", 6,7), new Rook("Black", 7,7),
                 new Pawn("Black", 0, 6), new Pawn("Black", 1, 6),  new Pawn("Black", 2, 6),  new Pawn("Black", 3, 6), new Pawn("Black", 4, 6), new Pawn("Black", 5, 6),  new Pawn("Black", 6, 6),  new Pawn("Black", 7, 6) };
         #endregion
+
+
+        int currentPiece = -1;
+
         #region Brushes & Font:
         SolidBrush whiteBrush = new SolidBrush(Color.White);
         SolidBrush blackBrush = new SolidBrush(Color.Black);
@@ -33,6 +37,7 @@ namespace ChessExperiment
 
         private void GameTimer_Tick(object sender, EventArgs e)
         {
+
             Refresh();
         }
 
@@ -59,6 +64,48 @@ namespace ChessExperiment
                 e.Graphics.DrawString(piece.name, font, textBrush, new Point((piece.position.X * 100), (piece.position.Y * 100)));
             }
             #endregion
+        }
+
+        private void GameScreen_MouseClick(object sender, MouseEventArgs e)
+        {
+            Point clickPoint = PointToClient(Cursor.Position);
+            clickPoint.X /= 100;
+            clickPoint.Y /= 100;
+
+            //Select Piece With Right Click
+            if (e.Button == MouseButtons.Right)
+            {
+                currentPiece = -1;
+                for (int i = 0; i < pieceList.Count; i++)
+                {
+                    if (pieceList[i].position == clickPoint)
+                    {
+                        currentPiece = i;
+                    }
+                }
+
+            }
+            //Piece Action With Left Click
+            else if (e.Button == MouseButtons.Left && currentPiece != -1)
+            {
+                int pieceToTake = -1;
+                for (int i = 0; i < pieceList.Count; i++)
+                {
+                    if (pieceList[i].position == clickPoint && i != currentPiece)
+                    {
+                        pieceToTake = i; break;
+                    }
+                }
+
+                pieceList[currentPiece].position = clickPoint;
+                pieceList.RemoveAt(pieceToTake);
+                currentPiece = -1;
+            }
+        }
+
+        private void GameScreen_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            //ASK HOW TO REMOVE THIS
         }
     }
     #region pieceClasses
