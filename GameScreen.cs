@@ -20,12 +20,13 @@ namespace ChessExperiment
                 new Pawn("Black", 0, 6), new Pawn("Black", 1, 6),  new Pawn("Black", 2, 6),  new Pawn("Black", 3, 6), new Pawn("Black", 4, 6), new Pawn("Black", 5, 6),  new Pawn("Black", 6, 6),  new Pawn("Black", 7, 6) };
         #endregion
 
-
+        List<Point> displayValidMoveSquares = new List<Point>();
         int currentPiece = -1;
 
         #region Brushes & Font:
-        SolidBrush whiteBrush = new SolidBrush(Color.White);
-        SolidBrush blackBrush = new SolidBrush(Color.Black);
+        SolidBrush overlayBrush = new SolidBrush(Color.FromArgb(70, 155, 155, 155));
+        SolidBrush whiteBrush = new SolidBrush(Color.FromArgb(255, 255, 230, 255));
+        SolidBrush blackBrush = new SolidBrush(Color.FromArgb(255, 80, 50, 80));
         SolidBrush whiteTextBrush = new SolidBrush(Color.Red);
         SolidBrush blackTextBrush = new SolidBrush(Color.Blue);
         Font font = new Font("Arial", 20, FontStyle.Bold);
@@ -37,7 +38,6 @@ namespace ChessExperiment
 
         private void GameTimer_Tick(object sender, EventArgs e)
         {
-
             Refresh();
         }
 
@@ -49,11 +49,18 @@ namespace ChessExperiment
                 for (int y = 0; y < 8; y++)
                 {
                     Rectangle currentSquareRectangle = new Rectangle(x * 100, y * 100, 100, 100);
+                    //Checker-Board Effect:
                     SolidBrush currentSquareBrush = blackBrush;
                     if ((x + y) % 2 != 0) { currentSquareBrush = whiteBrush; }
 
                     e.Graphics.FillRectangle(currentSquareBrush, currentSquareRectangle);
                 }
+            }
+            //Show places you can move a piece, I know this is redrawing over what I just did before
+            foreach (Point point in displayValidMoveSquares)
+            {
+                Rectangle currentSquareRectangle = new Rectangle(point.X * 100, point.Y * 100, 100, 100);
+                e.Graphics.FillEllipse(overlayBrush, currentSquareRectangle);
             }
             #endregion
             #region Draw ALL Pieces:
@@ -61,11 +68,13 @@ namespace ChessExperiment
             {
                 SolidBrush textBrush = blackTextBrush;
                 if (piece.color == "White") { textBrush = whiteTextBrush; }
-                e.Graphics.DrawString(piece.name, font, textBrush, new Point((piece.position.X * 100), (piece.position.Y * 100)));
+                e.Graphics.DrawString(piece.name, font, textBrush, new Point((piece.position.X * 100), (piece.position.Y * 100) + 50 - 20));
+                e.Graphics.DrawEllipse(new Pen(textBrush), new Rectangle(piece.position.X * 100, piece.position.Y * 100, 100, 100));
             }
             #endregion
         }
 
+        #region Choosing & Moving Pieces:
         private void GameScreen_MouseClick(object sender, MouseEventArgs e)
         {
             Point clickPoint = PointToClient(Cursor.Position);
@@ -84,25 +93,36 @@ namespace ChessExperiment
                     }
                 }
 
+                displayValidMoveSquares.Clear();
+                if (currentPiece != -1) { displayValidMoveSquares = pieceList[currentPiece].validMoveSquares(); }
             }
             //Piece Action With Left Click
             else if (e.Button == MouseButtons.Left && currentPiece != -1)
             {
-                int pieceToTake = -1;
-                for (int i = 0; i < pieceList.Count; i++)
+                if (pieceList[currentPiece].name == "Pawn")
                 {
-                    if (pieceList[i].position == clickPoint && i != currentPiece)
-                    {
-                        pieceToTake = i; break;
-                    }
+                    Pawn ghostPawn = (Pawn)pieceList[currentPiece];
+                    ghostPawn.hasNotMoved = false;
+                    pieceList[currentPiece] = ghostPawn;
                 }
 
-                pieceList[currentPiece].position = clickPoint;
-                pieceList.RemoveAt(pieceToTake);
-                currentPiece = -1;
+                if (displayValidMoveSquares.Contains(clickPoint))
+                {
+                    pieceList[currentPiece].position = clickPoint;
+                    for (int i = 0; i < pieceList.Count; i++)
+                    {
+                        if (pieceList[i].position == clickPoint && i != currentPiece)
+                        {
+                            pieceList.RemoveAt(i); break;
+                        }
+                    }
+                    currentPiece = -1;
+                }
+
+                displayValidMoveSquares.Clear();
             }
         }
-
+        #endregion
         private void GameScreen_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             //ASK HOW TO REMOVE THIS
@@ -113,14 +133,46 @@ namespace ChessExperiment
     {
         public string color, name;
         public Point position;
+        public List<Point> validSquares = new List<Point>();
+
+        public List<Point> validMoveSquares()
+        {
+            validSquares.Clear();
+            updateValidSquares();
+            return validSquares;
+        }
+
+        public List<Point> lineChecks(int range, int offsetOne, int offsetTwo)
+        {
+            List<Point> ghostPointList = new List<Point>();
+            for (int i = 1; i <= range; i++)
+            {
+                ghostPointList.Add(new Point(position.X + (offsetOne * i), position.Y + (offsetTwo * i)));
+                ghostPointList.Add(new Point(position.X + (offsetOne * i), position.Y - (offsetTwo * i)));
+                ghostPointList.Add(new Point(position.X - (offsetTwo * i), position.Y + (offsetOne * i)));
+                ghostPointList.Add(new Point(position.X - (offsetTwo * i), position.Y - (offsetOne * i)));
+            }
+            return ghostPointList;
+        }
+
+        public virtual void updateValidSquares() { }
     }
     public class Pawn : Chesspiece
     {
+        public bool hasNotMoved = true;
+        int direction;
         public Pawn(string _color, int x, int y)
         {
             color = _color;
             position = new Point(x, y);
             name = "Pawn";
+            direction = -1;
+            if (color == "White") { direction = 1; }
+        }
+        public override void updateValidSquares()
+        {
+            validSquares.Add(new Point(position.X, position.Y + direction));
+            if (hasNotMoved) { validSquares.Add(new Point(position.X, position.Y + direction * 2)); }
         }
     }
     public class Rook : Chesspiece
@@ -131,6 +183,11 @@ namespace ChessExperiment
             position = new Point(x, y);
             name = "Rook";
         }
+        public override void updateValidSquares()
+        {
+            validSquares.AddRange(lineChecks(8, 1, 0));
+            validSquares.AddRange(lineChecks(8, 0, 1));
+        }
     }
     public class Knight : Chesspiece
     {
@@ -139,6 +196,11 @@ namespace ChessExperiment
             color = _color;
             position = new Point(x, y);
             name = "Knight";
+        }
+        public override void updateValidSquares()
+        {
+            validSquares.AddRange(lineChecks(1, 2, 1));
+            validSquares.AddRange(lineChecks(1, 1, 2));
         }
     }
     public class Bishop : Chesspiece
@@ -149,6 +211,10 @@ namespace ChessExperiment
             position = new Point(x, y);
             name = "Bishop";
         }
+        public override void updateValidSquares()
+        {
+            validSquares.AddRange(lineChecks(8, 1, 1));
+        }
     }
     public class King : Chesspiece
     {
@@ -158,6 +224,12 @@ namespace ChessExperiment
             position = new Point(x, y);
             name = "King";
         }
+        public override void updateValidSquares()
+        {
+            validSquares.AddRange(lineChecks(1, 1, 0));
+            validSquares.AddRange(lineChecks(1, 0, 1));
+            validSquares.AddRange(lineChecks(1, 1, 1));
+        }
     }
     public class Queen : Chesspiece
     {
@@ -166,6 +238,12 @@ namespace ChessExperiment
             color = _color;
             position = new Point(x, y);
             name = "Queen";
+        }
+        public override void updateValidSquares()
+        {
+            validSquares.AddRange(lineChecks(8, 1, 0));
+            validSquares.AddRange(lineChecks(8, 0, 1));
+            validSquares.AddRange(lineChecks(8, 1, 1));
         }
     }
     #endregion

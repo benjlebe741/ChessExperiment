@@ -30,6 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             this.GameTimer = new System.Windows.Forms.Timer(this.components);
+            this.debugLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // GameTimer
@@ -38,11 +39,22 @@
             this.GameTimer.Interval = 15;
             this.GameTimer.Tick += new System.EventHandler(this.GameTimer_Tick);
             // 
+            // debugLabel
+            // 
+            this.debugLabel.AutoSize = true;
+            this.debugLabel.BackColor = System.Drawing.Color.White;
+            this.debugLabel.Location = new System.Drawing.Point(89, 382);
+            this.debugLabel.Name = "debugLabel";
+            this.debugLabel.Size = new System.Drawing.Size(41, 15);
+            this.debugLabel.TabIndex = 0;
+            this.debugLabel.Text = "label1";
+            // 
             // GameScreen
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
+            this.Controls.Add(this.debugLabel);
             this.DoubleBuffered = true;
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "GameScreen";
@@ -51,11 +63,13 @@
             this.MouseClick += new System.Windows.Forms.MouseEventHandler(this.GameScreen_MouseClick);
             this.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.GameScreen_MouseDoubleClick);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
 
         private System.Windows.Forms.Timer GameTimer;
+        private System.Windows.Forms.Label debugLabel;
     }
 }
