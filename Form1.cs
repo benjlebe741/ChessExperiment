@@ -12,12 +12,13 @@ namespace ChessExperiment
 {
     public partial class Form1 : Form
     {
+        public static int[] scoreTracker = new int[2] {0,0};
         public Form1()
         {
             this.Width = ClientSize.Width;
             this.Height = ClientSize.Height;
             InitializeComponent();
-            ChangeScreen(this, new GameScreen());
+            ChangeScreen(this, new MainMenu("Welcome to Chess!"));
         }
 
         public static void ChangeScreen(object sender, UserControl next)

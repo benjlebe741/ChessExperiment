@@ -28,7 +28,7 @@ namespace ChessExperiment
         SolidBrush whiteBrush = new SolidBrush(Color.FromArgb(255, 255, 230, 255));
         SolidBrush blackBrush = new SolidBrush(Color.FromArgb(255, 80, 50, 80));
         SolidBrush whiteTextBrush = new SolidBrush(Color.Red);
-        SolidBrush blackTextBrush = new SolidBrush(Color.Blue);
+        SolidBrush blackTextBrush = new SolidBrush(Color.LimeGreen);
         Font font = new Font("Arial", 20, FontStyle.Bold);
         #endregion
         public GameScreen()
@@ -94,7 +94,11 @@ namespace ChessExperiment
                 }
 
                 displayValidMoveSquares.Clear();
-                if (currentPiece != -1) { displayValidMoveSquares = pieceList[currentPiece].validMoveSquares(); }
+                if (currentPiece != -1)
+                {
+                    pieceList[currentPiece].boardPieceInfo = pieceList;
+                    displayValidMoveSquares = pieceList[currentPiece].validMoveSquares();
+                }
             }
             //Piece Action With Left Click
             else if (e.Button == MouseButtons.Left && currentPiece != -1)
@@ -113,6 +117,11 @@ namespace ChessExperiment
                     {
                         if (pieceList[i].position == clickPoint && i != currentPiece)
                         {
+                            if (pieceList[i].name == "King")
+                            {
+                                Form1.scoreTracker[(pieceList[i].color == "White") ? 0 : 1]++;
+                                Form1.ChangeScreen(this, new MainMenu($"{pieceList[i].color} Was Checkmated!\n Score: {Form1.scoreTracker[0]} | {Form1.scoreTracker[1]}"));
+                            }
                             pieceList.RemoveAt(i); break;
                         }
                     }
@@ -134,7 +143,7 @@ namespace ChessExperiment
         public string color, name;
         public Point position;
         public List<Point> validSquares = new List<Point>();
-
+        public List<Chesspiece> boardPieceInfo = new List<Chesspiece>();
         public List<Point> validMoveSquares()
         {
             validSquares.Clear();
@@ -142,15 +151,21 @@ namespace ChessExperiment
             return validSquares;
         }
 
-        public List<Point> lineChecks(int range, int offsetOne, int offsetTwo)
+        public List<Point> checkLine(int range, int offsetOne, int offsetTwo)
         {
             List<Point> ghostPointList = new List<Point>();
             for (int i = 1; i <= range; i++)
             {
-                ghostPointList.Add(new Point(position.X + (offsetOne * i), position.Y + (offsetTwo * i)));
-                ghostPointList.Add(new Point(position.X + (offsetOne * i), position.Y - (offsetTwo * i)));
-                ghostPointList.Add(new Point(position.X - (offsetTwo * i), position.Y + (offsetOne * i)));
-                ghostPointList.Add(new Point(position.X - (offsetTwo * i), position.Y - (offsetOne * i)));
+                Point nextPoint = new Point(position.X + (offsetOne * i), position.Y + (offsetTwo * i));
+                Chesspiece nextPiece = boardPieceInfo.Find(x => x.position == nextPoint);
+                if (nextPiece != null)
+                {
+                    if (nextPiece.color == color) { break; }
+
+                    ghostPointList.Add(nextPoint);
+                    if (nextPiece.color != color) { break; }
+                }
+                else { ghostPointList.Add(nextPoint); }
             }
             return ghostPointList;
         }
@@ -185,8 +200,10 @@ namespace ChessExperiment
         }
         public override void updateValidSquares()
         {
-            validSquares.AddRange(lineChecks(8, 1, 0));
-            validSquares.AddRange(lineChecks(8, 0, 1));
+            validSquares.AddRange(checkLine(8, 1, 0));
+            validSquares.AddRange(checkLine(8, 0, 1));
+            validSquares.AddRange(checkLine(8, -1, 0));
+            validSquares.AddRange(checkLine(8, 0, -1));
         }
     }
     public class Knight : Chesspiece
@@ -199,8 +216,14 @@ namespace ChessExperiment
         }
         public override void updateValidSquares()
         {
-            validSquares.AddRange(lineChecks(1, 2, 1));
-            validSquares.AddRange(lineChecks(1, 1, 2));
+            validSquares.AddRange(checkLine(1, 2, 1));
+            validSquares.AddRange(checkLine(1, 1, 2));
+            validSquares.AddRange(checkLine(1, -2, 1));
+            validSquares.AddRange(checkLine(1, 1, -2));
+            validSquares.AddRange(checkLine(1, 2, -1));
+            validSquares.AddRange(checkLine(1, -1, 2));
+            validSquares.AddRange(checkLine(1, -2, -1));
+            validSquares.AddRange(checkLine(1, -1, -2));
         }
     }
     public class Bishop : Chesspiece
@@ -213,7 +236,10 @@ namespace ChessExperiment
         }
         public override void updateValidSquares()
         {
-            validSquares.AddRange(lineChecks(8, 1, 1));
+            validSquares.AddRange(checkLine(8, 1, 1));
+            validSquares.AddRange(checkLine(8, -1, 1));
+            validSquares.AddRange(checkLine(8, 1, -1));
+            validSquares.AddRange(checkLine(8, -1, -1));
         }
     }
     public class King : Chesspiece
@@ -226,9 +252,15 @@ namespace ChessExperiment
         }
         public override void updateValidSquares()
         {
-            validSquares.AddRange(lineChecks(1, 1, 0));
-            validSquares.AddRange(lineChecks(1, 0, 1));
-            validSquares.AddRange(lineChecks(1, 1, 1));
+            validSquares.AddRange(checkLine(1, 1, 0));
+            validSquares.AddRange(checkLine(1, 0, 1));
+            validSquares.AddRange(checkLine(1, -1, 0));
+            validSquares.AddRange(checkLine(1, 0, -1));
+
+            validSquares.AddRange(checkLine(1, 1, 1));
+            validSquares.AddRange(checkLine(1, 1, -1));
+            validSquares.AddRange(checkLine(1, -1, 1));
+            validSquares.AddRange(checkLine(1, -1, -1));
         }
     }
     public class Queen : Chesspiece
@@ -241,9 +273,15 @@ namespace ChessExperiment
         }
         public override void updateValidSquares()
         {
-            validSquares.AddRange(lineChecks(8, 1, 0));
-            validSquares.AddRange(lineChecks(8, 0, 1));
-            validSquares.AddRange(lineChecks(8, 1, 1));
+            validSquares.AddRange(checkLine(8, 1, 0));
+            validSquares.AddRange(checkLine(8, 0, 1));
+            validSquares.AddRange(checkLine(8, -1, 0));
+            validSquares.AddRange(checkLine(8, 0, -1));
+
+            validSquares.AddRange(checkLine(8, 1, 1));
+            validSquares.AddRange(checkLine(8, 1, -1));
+            validSquares.AddRange(checkLine(8, -1, 1));
+            validSquares.AddRange(checkLine(8, -1, -1));
         }
     }
     #endregion
