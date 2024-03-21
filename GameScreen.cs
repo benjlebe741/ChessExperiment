@@ -39,6 +39,10 @@ namespace ChessExperiment
 
         private void GameTimer_Tick(object sender, EventArgs e)
         {
+            if (currentPiece != -1)
+            {
+                debugLabel.Text = $"{pieceList[currentPiece].position}\n{currentPiece}";
+            }
             Refresh();
         }
 
@@ -107,11 +111,25 @@ namespace ChessExperiment
             //Piece Action With Left Click
             else if (e.Button == MouseButtons.Left && currentPiece != -1)
             {
-
                 if (displayValidMoveSquares.Contains(clickPoint))
                 {
                     pieceList[currentPiece].position = clickPoint;
                     currentMove++;
+
+                    if (pieceList[currentPiece].name == "Pawn")
+                    {
+                        if (clickPoint.Y == 0 || clickPoint.Y == 7) //Pawn Promotions: 
+                        {
+                            pieceList[currentPiece] = new Queen(pieceList[currentPiece].color, pieceList[currentPiece].position.X, pieceList[currentPiece].position.Y);
+                        }
+                        else
+                        {
+                            Pawn ghostPawn = (Pawn)pieceList[currentPiece];
+                            ghostPawn.hasNotMoved = false;
+                            pieceList[currentPiece] = ghostPawn;
+                        }
+                    }
+
                     for (int i = 0; i < pieceList.Count; i++)
                     {
                         if (pieceList[i].position == clickPoint && i != currentPiece)
@@ -122,19 +140,6 @@ namespace ChessExperiment
                                 Form1.ChangeScreen(this, new MainMenu($"{pieceList[i].color} Was Checkmated!\n Score: {Form1.scoreTracker[0]} | {Form1.scoreTracker[1]}"));
                             }
                             pieceList.RemoveAt(i); break;
-                        }
-                    }
-
-
-                    if (pieceList[currentPiece].name == "Pawn")
-                    {
-                        Pawn ghostPawn = (Pawn)pieceList[currentPiece];
-                        ghostPawn.hasNotMoved = false;
-                        pieceList[currentPiece] = ghostPawn;
-
-                        if (pieceList[currentPiece].position.Y == 0 || pieceList[currentPiece].position.Y == 7) //Pawn Promotions: 
-                        {
-                            pieceList[currentPiece] = new Queen(pieceList[currentPiece].color, pieceList[currentPiece].position.X, pieceList[currentPiece].position.Y);
                         }
                     }
                     currentPiece = -1;
