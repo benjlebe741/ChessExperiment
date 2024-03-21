@@ -22,6 +22,7 @@ namespace ChessExperiment
 
         List<Point> displayValidMoveSquares = new List<Point>();
         int currentPiece = -1;
+        int currentMove = 0;
 
         #region Brushes & Font:
         SolidBrush overlayBrush = new SolidBrush(Color.FromArgb(70, 155, 155, 155));
@@ -94,25 +95,23 @@ namespace ChessExperiment
                 }
 
                 displayValidMoveSquares.Clear();
-                if (currentPiece != -1)
+                if (currentPiece != -1) //If the piece is not empty space, but an actual piece in the list:
                 {
-                    pieceList[currentPiece].boardPieceInfo = pieceList;
-                    displayValidMoveSquares = pieceList[currentPiece].validMoveSquares();
+                    if (pieceList[currentPiece].color == ((currentMove % 2 == 0) ? "White" : "Black")) //If the piece belongs to the correct team (has to be a real piece before checking)
+                    {
+                        pieceList[currentPiece].boardPieceInfo = pieceList;
+                        displayValidMoveSquares = pieceList[currentPiece].validMoveSquares();
+                    }
                 }
             }
             //Piece Action With Left Click
             else if (e.Button == MouseButtons.Left && currentPiece != -1)
             {
-                if (pieceList[currentPiece].name == "Pawn")
-                {
-                    Pawn ghostPawn = (Pawn)pieceList[currentPiece];
-                    ghostPawn.hasNotMoved = false;
-                    pieceList[currentPiece] = ghostPawn;
-                }
 
                 if (displayValidMoveSquares.Contains(clickPoint))
                 {
                     pieceList[currentPiece].position = clickPoint;
+                    currentMove++;
                     for (int i = 0; i < pieceList.Count; i++)
                     {
                         if (pieceList[i].position == clickPoint && i != currentPiece)
@@ -125,6 +124,19 @@ namespace ChessExperiment
                             pieceList.RemoveAt(i); break;
                         }
                     }
+
+
+                    if (pieceList[currentPiece].name == "Pawn")
+                    {
+                        Pawn ghostPawn = (Pawn)pieceList[currentPiece];
+                        ghostPawn.hasNotMoved = false;
+                        pieceList[currentPiece] = ghostPawn;
+
+                        if (pieceList[currentPiece].position.Y == 0 || pieceList[currentPiece].position.Y == 7) //Pawn Promotions: 
+                        {
+                            pieceList[currentPiece] = new Queen(pieceList[currentPiece].color, pieceList[currentPiece].position.X, pieceList[currentPiece].position.Y);
+                        }
+                    }
                     currentPiece = -1;
                 }
 
@@ -135,6 +147,14 @@ namespace ChessExperiment
         private void GameScreen_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             //ASK HOW TO REMOVE THIS
+        }
+
+        private void GameScreen_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Escape)
+            {
+                Application.Exit();
+            }
         }
     }
     #region pieceClasses
@@ -186,8 +206,27 @@ namespace ChessExperiment
         }
         public override void updateValidSquares()
         {
-            validSquares.Add(new Point(position.X, position.Y + direction));
-            if (hasNotMoved) { validSquares.Add(new Point(position.X, position.Y + direction * 2)); }
+            validSquares.AddRange(checkLine(((hasNotMoved) ? 2 : 1), 0, direction, false));
+            validSquares.AddRange(checkLine(1, 1, direction, true));
+            validSquares.AddRange(checkLine(1, -1, direction, true));
+        }
+
+        private List<Point> checkLine(int range, int offsetOne, int offsetTwo, bool diagonal)
+        {
+            List<Point> ghostPointList = new List<Point>();
+            for (int i = 1; i <= range; i++)
+            {
+                Point nextPoint = new Point(position.X + (offsetOne * i), position.Y + (offsetTwo * i));
+                Chesspiece nextPiece = boardPieceInfo.Find(x => x.position == nextPoint);
+                if (nextPiece != null)
+                {
+                    if (nextPiece.color == color) { break; } //if the piece is its own color
+                    if (nextPiece.color != color && diagonal == false) { break; } // if the piece is its enemy color, but its moving not attacking
+                    ghostPointList.Add(nextPoint);
+                }
+                else if (diagonal == false) { ghostPointList.Add(nextPoint); }
+            }
+            return ghostPointList;
         }
     }
     public class Rook : Chesspiece

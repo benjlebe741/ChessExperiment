@@ -17,7 +17,12 @@ namespace ChessExperiment
         {
             this.Width = ClientSize.Width;
             this.Height = ClientSize.Height;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.WindowState = FormWindowState.Maximized;
+            this.ShowInTaskbar = false;
+            this.Dock = DockStyle.Fill;
             InitializeComponent();
+
             ChangeScreen(this, new MainMenu("Welcome to Chess!"));
         }
 
