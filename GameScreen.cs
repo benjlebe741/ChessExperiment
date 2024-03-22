@@ -25,6 +25,8 @@ namespace ChessExperiment
         int currentMove = 0;
 
         #region Brushes & Font:
+        SolidBrush kingChecksOverlayBrush1 = new SolidBrush(Color.FromArgb(170, 155, 20, 155));
+        SolidBrush kingChecksOverlayBrush2 = new SolidBrush(Color.FromArgb(170, 20, 155, 155));
         SolidBrush overlayBrush = new SolidBrush(Color.FromArgb(70, 155, 155, 155));
         SolidBrush whiteBrush = new SolidBrush(Color.FromArgb(255, 255, 230, 255));
         SolidBrush blackBrush = new SolidBrush(Color.FromArgb(255, 80, 50, 80));
@@ -39,10 +41,15 @@ namespace ChessExperiment
 
         private void GameTimer_Tick(object sender, EventArgs e)
         {
-            if (currentPiece != -1)
-            {
-                debugLabel.Text = $"{pieceList[currentPiece].position}\n{currentPiece}";
-            }
+            //King whiteKing = pieceList.Find(x => x.name == "King" & x.color == "White") as King;
+            //whitePotentialMoves = kingChecks(whiteKing);
+            //King blackKing = pieceList.Find(x => x.name == "King" & x.color == "Black") as King;
+            //blackPotentialMoves = kingChecks(blackKing);
+            //debugLabel.Text = $"{kingChecks(king)}";
+            //if (currentPiece != -1)
+            //{
+            //    debugLabel.Text = $"{pieceList[currentPiece].position}\n{currentPiece}";
+            //}
             Refresh();
         }
 
@@ -67,6 +74,18 @@ namespace ChessExperiment
                 Rectangle currentSquareRectangle = new Rectangle(point.X * 100, point.Y * 100, 100, 100);
                 e.Graphics.FillEllipse(overlayBrush, currentSquareRectangle);
             }
+            //King whiteKing = pieceList.Find(x => x.name == "King" & x.color == "White") as King;
+            //foreach (Point point in whiteKing.enemyMoves)
+            //{
+            //    Rectangle currentSquareRectangle = new Rectangle(point.X * 100, point.Y * 100, 100, 100);
+            //    e.Graphics.DrawEllipse(new Pen(kingChecksOverlayBrush2, 4), currentSquareRectangle);
+            //}
+            //King blackKing = pieceList.Find(x => x.name == "King" & x.color == "Black") as King;
+            //foreach (Point point in blackKing.enemyMoves)
+            //{
+            //    Rectangle currentSquareRectangle = new Rectangle(point.X * 100, point.Y * 100, 100, 100);
+            //    e.Graphics.DrawEllipse(new Pen(kingChecksOverlayBrush1, 4), currentSquareRectangle);
+            //}
             #endregion
             #region Draw ALL Pieces:
             foreach (Chesspiece piece in pieceList)
@@ -101,7 +120,8 @@ namespace ChessExperiment
                 displayValidMoveSquares.Clear();
                 if (currentPiece != -1) //If the piece is not empty space, but an actual piece in the list:
                 {
-                    if (pieceList[currentPiece].color == ((currentMove % 2 == 0) ? "White" : "Black")) //If the piece belongs to the correct team (has to be a real piece before checking)
+                    string currentColor = (currentMove % 2 == 0) ? "White" : "Black";
+                    if (pieceList[currentPiece].color == currentColor) //If the piece belongs to the correct team (has to be a real piece before checking)
                     {
                         pieceList[currentPiece].boardPieceInfo = pieceList;
                         displayValidMoveSquares = pieceList[currentPiece].validMoveSquares();
@@ -143,9 +163,45 @@ namespace ChessExperiment
                         }
                     }
                     currentPiece = -1;
+                    updateKingsChecks();
                 }
 
                 displayValidMoveSquares.Clear();
+            }
+        }
+        #endregion
+
+        #region Checks & Checkmate
+        private List<Point> kingChecks(King king)
+        {
+            List<Chesspiece> enemyPieces = pieceList.FindAll(x => x.color != king.color);
+            List<Point> enemyMovePositions = new List<Point>();
+            foreach (Chesspiece enemy in enemyPieces)
+            {
+                if (enemy is Pawn) 
+                {
+                    Pawn ghostPawn = (Pawn)enemy;
+                    enemyMovePositions.Add(new Point(ghostPawn.position.X + 1, ghostPawn.position.Y + (ghostPawn.direction)));
+                    enemyMovePositions.Add(new Point(ghostPawn.position.X - 1, ghostPawn.position.Y + (ghostPawn.direction)));
+                }
+                else
+                {
+                    enemy.boardPieceInfo = pieceList;
+                    enemyMovePositions.AddRange(enemy.validMoveSquares());
+                }
+            }
+            return enemyMovePositions;
+        }
+
+        void updateKingsChecks()
+        {
+            //Update and check for potential checks.
+            List<Chesspiece> kings = pieceList.FindAll(x => x.name == "King");
+            foreach (King king in kings)
+            {
+                List<Point> tempPointList = kingChecks(king);
+                king.enemyMoves.Clear();
+                king.enemyMoves.AddRange(tempPointList);
             }
         }
         #endregion
@@ -200,7 +256,7 @@ namespace ChessExperiment
     public class Pawn : Chesspiece
     {
         public bool hasNotMoved = true;
-        int direction;
+        public int direction;
         public Pawn(string _color, int x, int y)
         {
             color = _color;
@@ -288,6 +344,7 @@ namespace ChessExperiment
     }
     public class King : Chesspiece
     {
+        public List<Point> enemyMoves = new List<Point>();
         public King(string _color, int x, int y)
         {
             color = _color;
