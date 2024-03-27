@@ -23,7 +23,7 @@ namespace ChessExperiment
             this.Dock = DockStyle.Fill;
             InitializeComponent();
 
-            ChangeScreen(this, new MainMenu("Welcome to Chess!"));
+            ChangeScreen(this, new MainMenu("Welcome to Chess!\nRight - Select\nLeft - Confirm"));
         }
 
         public static void ChangeScreen(object sender, UserControl next)
